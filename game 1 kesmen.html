@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🐙 Find & Match - Sea Creatures 🐠</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap');
+
+    :root {
+      --game-bg: #0a1628;
+      --accent-1: #ff6b9d;
+      --accent-2: #c44dff;
+      --accent-3: #4dc9f6;
+      --accent-4: #ffd93d;
+      --text-primary: #ffffff;
+      --text-secondary: #8899bb;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--game-bg);
+      min-height: 100vh;
+      font-family: 'Fredoka', 'Segoe UI', system-ui, sans-serif;
+      overflow-x: hidden;
+    }
+
+    .ocean-bg {
+      position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse at 20% 50%, rgba(0,100,200,0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 20%, rgba(100,0,200,0.1) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 80%, rgba(0,200,150,0.1) 0%, transparent 50%),
+        var(--game-bg);
+      z-index: 0;
+    }
+
+    .bubbles {
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 1; overflow: hidden;
+    }
+
+    .bubble {
+      position: absolute; bottom: -20px; border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.15), rgba(255,255,255,0.03));
+      border: 1px solid rgba(255,255,255,0.08);
+      animation: float-up linear infinite;
+    }
+
+    @keyframes float-up {
+      0%   { transform: translateY(0) translateX(0) scale(1); opacity: 0; }
+      10%  { opacity: 1; }
+      90%  { opacity: 0.5; }
+      100% { transform: translateY(-110vh) translateX(30px) scale(0.5); opacity: 0; }
+    }
+
+    .game-container {
+      position: relative; z-index: 2;
+      max-width: 800px; margin: 0 auto; padding: 20px;
+    }
+
+    /* ── Header ── */
+    .game-header { text-align: center; margin-bottom: 24px; }
+
+    .game-title {
+      font-size: 2.5rem; font-weight: 700;
+      background: linear-gradient(135deg, var(--accent-4), var(--accent-1), var(--accent-2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .game-subtitle {
+      color: var(--text-secondary); font-size: 0.95rem;
+      letter-spacing: 2px; text-transform: uppercase;
+    }
+
+    /* ── Stats ── */
+    .stats-bar {
+      display: flex; justify-content: center; gap: 16px;
+      margin-bottom: 20px; flex-wrap: wrap;
+    }
+
+    .stat-card {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px; padding: 10px 20px;
+      text-align: center; backdrop-filter: blur(10px); min-width: 110px;
+    }
+
+    .stat-label {
+      font-size: 0.7rem; color: var(--text-secondary);
+      text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 2px;
+    }
+
+    .stat-value { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); }
+    .stat-value.moves { color: var(--accent-3); }
+    .stat-value.pairs { color: var(--accent-4); }
+    .stat-value.timer { color: var(--accent-1); }
+
+    /* ── Grid ── */
+    .card-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 12px; max-width: 600px; margin: 0 auto 24px;
+    }
+
+    @media (max-width: 500px) {
+      .card-grid { gap: 8px; }
+      .game-title { font-size: 1.8rem; }
+    }
+
+    /* ── Card ── */
+    .card-slot { aspect-ratio: 0.7; perspective: 800px; cursor: pointer; }
+
+    .card-inner {
+      position: relative; width: 100%; height: 100%;
+      transition: transform 0.5s cubic-bezier(0.4,0,0.2,1);
+      transform-style: preserve-3d;
+    }
+
+    .card-slot.flipped .card-inner { transform: rotateY(180deg); }
+
+    .card-face {
+      position: absolute; inset: 0;
+      backface-visibility: hidden; border-radius: 14px; overflow: hidden;
+    }
+
+    .card-back {
+      background: linear-gradient(135deg, #1e3a5f, #2a1a4e);
+      border: 2px solid rgba(255,255,255,0.12);
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .card-back:hover {
+      border-color: rgba(255,255,255,0.3);
+      box-shadow: 0 0 20px rgba(100,150,255,0.2);
+    }
+
+    .card-back .question-mark { font-size: 2.2rem; opacity: 0.5; }
+
+    .card-back .wave-pattern {
+      position: absolute; bottom: 0; left: 0; right: 0; height: 40%;
+      background: repeating-linear-gradient(-45deg, transparent, transparent 5px,
+        rgba(255,255,255,0.03) 5px, rgba(255,255,255,0.03) 10px);
+    }
+
+    .card-front {
+      transform: rotateY(180deg);
+      display: flex; align-items: center; justify-content: center;
+      border: 2px solid rgba(255,255,255,0.15);
+    }
+
+    .card-front canvas {
+      width: 100%; height: 100%; object-fit: cover; border-radius: 12px;
+    }
+
+    .card-slot.matched .card-front {
+      border-color: rgba(80,255,160,0.5);
+      box-shadow: 0 0 20px rgba(80,255,160,0.2);
+    }
+
+    .card-slot.matched .card-inner { animation: match-bounce 0.5s ease; }
+
+    @keyframes match-bounce {
+      0%,100% { transform: rotateY(180deg) scale(1); }
+      50%     { transform: rotateY(180deg) scale(1.08); }
+    }
+
+    .card-slot.wrong .card-inner { animation: shake 0.4s ease; }
+
+    @keyframes shake {
+      0%,100% { transform: rotateY(180deg) translateX(0); }
+      25%     { transform: rotateY(180deg) translateX(-6px); }
+      75%     { transform: rotateY(180deg) translateX(6px); }
+    }
+
+    /* ── Buttons ── */
+    .btn-container { text-align: center; margin-bottom: 20px; }
+
+    .btn-restart {
+      background: linear-gradient(135deg, var(--accent-2), var(--accent-1));
+      color: white; border: none; padding: 12px 32px; border-radius: 50px;
+      font-size: 1rem; font-weight: 600; cursor: pointer;
+      transition: all 0.3s; letter-spacing: 0.5px; font-family: inherit;
+    }
+
+    .btn-restart:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(196,77,255,0.4);
+    }
+
+    .difficulty-selector {
+      display: flex; justify-content: center; gap: 10px; margin-bottom: 20px;
+    }
+
+    .diff-btn {
+      padding: 8px 20px; border-radius: 50px;
+      border: 2px solid rgba(255,255,255,0.15);
+      background: transparent; color: var(--text-secondary);
+      font-size: 0.85rem; font-weight: 600; cursor: pointer;
+      transition: all 0.3s; text-transform: uppercase;
+      letter-spacing: 1px; font-family: inherit;
+    }
+
+    .diff-btn:hover { border-color: rgba(255,255,255,0.3); color: var(--text-primary); }
+
+    .diff-btn.active {
+      background: linear-gradient(135deg, var(--accent-3), var(--accent-2));
+      border-color: transparent; color: white;
+    }
+
+    /* ── Victory ── */
+    .victory-overlay {
+      display: none; position: fixed; inset: 0; z-index: 100;
+      background: rgba(10,22,40,0.92); backdrop-filter: blur(8px);
+      align-items: center; justify-content: center;
+    }
+
+    .victory-overlay.show { display: flex; }
+
+    .victory-card {
+      background: linear-gradient(135deg, rgba(30,50,80,0.95), rgba(40,20,70,0.95));
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 24px; padding: 40px 50px; text-align: center;
+      animation: victory-pop 0.6s cubic-bezier(0.175,0.885,0.32,1.275);
+      max-width: 400px; width: 90%;
+    }
+
+    @keyframes victory-pop {
+      0%   { transform: scale(0.5); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .victory-emoji {
+      font-size: 4rem; margin-bottom: 10px;
+      animation: emoji-float 2s ease-in-out infinite;
+    }
+
+    @keyframes emoji-float {
+      0%,100% { transform: translateY(0); }
+      50%     { transform: translateY(-10px); }
+    }
+
+    .victory-title {
+      font-size: 2rem; font-weight: 700;
+      background: linear-gradient(135deg, var(--accent-4), var(--accent-1));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      margin-bottom: 16px;
+    }
+
+    .victory-stats { color: var(--text-secondary); font-size: 1.1rem; margin-bottom: 8px; }
+    .victory-stats span { color: var(--accent-3); font-weight: 700; }
+    .star-rating { font-size: 2rem; margin: 16px 0; letter-spacing: 4px; }
+
+    .confetti-canvas {
+      position: fixed; inset: 0; pointer-events: none; z-index: 101;
+    }
+  </style>
+</head>
+<body>
+
+<div class="ocean-bg"></div>
+<div class="bubbles" id="bubbles"></div>
+<canvas class="confetti-canvas" id="confettiCanvas"></canvas>
+
+<!-- Victory Overlay -->
+<div class="victory-overlay" id="victoryOverlay">
+  <div class="victory-card">
+    <div class="victory-emoji">🎉</div>
+    <div class="victory-title">Selamat!</div>
+    <div class="star-rating" id="starRating"></div>
+    <div class="victory-stats">Langkah: <span id="victoryMoves">0</span></div>
+    <div class="victory-stats">Waktu: <span id="victoryTime">0:00</span></div>
+    <div class="victory-stats" style="margin-bottom:24px;">Skor: <span id="victoryScore">0</span></div>
+    <button class="btn-restart" onclick="startGame()">🔄 Main Lagi</button>
+  </div>
+</div>
+
+<div class="game-container">
+  <div class="game-header">
+    <div class="game-title">🌊 Find & Match</div>
+    <div class="game-subtitle">Sea Creatures Edition</div>
+  </div>
+
+  <div class="difficulty-selector">
+    <button class="diff-btn active" onclick="setDifficulty(this,6)">Mudah (6)</button>
+    <button class="diff-btn" onclick="setDifficulty(this,8)">Sedang (8)</button>
+    <button class="diff-btn" onclick="setDifficulty(this,10)">Sulit (10)</button>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat-card">
+      <div class="stat-label">Langkah</div>
+      <div class="stat-value moves" id="moveCount">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Pasangan</div>
+      <div class="stat-value pairs" id="pairCount">0 / 6</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Waktu</div>
+      <div class="stat-value timer" id="timerDisplay">0:00</div>
+    </div>
+  </div>
+
+  <div class="card-grid" id="cardGrid"></div>
+
+  <div class="btn-container">
+    <button class="btn-restart" onclick="startGame()">🔄 Mulai Ulang</button>
+  </div>
+</div>
+
+<script>
+  // ── State ──
+  let totalPairs = 6;
+  let cards = [];
+  let flippedCards = [];
+  let matchedPairs = 0;
+  let moves = 0;
+  let timerInterval = null;
+  let seconds = 0;
+  let isLocked = false;
+  let gameStarted = false;
+  let spriteImg = null;
+  let spriteLoaded = false;
+
+  // Card defs — 2 rows × 5 cols in the sprite
+  const cardDefs = [
+    { id:1,  name:"Kuda Laut",   emoji:"🦈", col:0, row:0, bg:"#f4a261" },
+    { id:2,  name:"Gurita",      emoji:"🐙", col:1, row:0, bg:"#9b5de5" },
+    { id:3,  name:"Ikan Buntal", emoji:"🐡", col:2, row:0, bg:"#2ec4b6" },
+    { id:4,  name:"Narwhal",     emoji:"🦄", col:3, row:0, bg:"#f4845f" },
+    { id:5,  name:"Penyu",       emoji:"🐢", col:4, row:0, bg:"#f9c74f" },
+    { id:6,  name:"Bintang Laut",emoji:"⭐", col:0, row:1, bg:"#f9c74f" },
+    { id:7,  name:"Lumba-lumba", emoji:"🐬", col:1, row:1, bg:"#4895ef" },
+    { id:8,  name:"Kepiting",    emoji:"🦀", col:2, row:1, bg:"#2ec4b6" },
+    { id:9,  name:"Ubur-ubur",   emoji:"🪸", col:3, row:1, bg:"#f4845f" },
+    { id:10, name:"Ikan",        emoji:"🐠", col:4, row:1, bg:"#90be6d" },
+  ];
+
+  // ── Sprite ──
+  function loadSprite() {
+    return new Promise(resolve => {
+      spriteImg = new Image();
+      spriteImg.onload  = () => { spriteLoaded = true;  resolve(); };
+      spriteImg.onerror = () => { spriteLoaded = false; resolve(); };
+      spriteImg.src = "cards.png";
+    });
+  }
+
+  function drawCard(def, canvas) {
+    if (!spriteLoaded) return false;
+    const ctx = canvas.getContext("2d");
+    const cw = spriteImg.naturalWidth  / 5;
+    const ch = spriteImg.naturalHeight / 2;
+    canvas.width  = cw;
+    canvas.height = ch;
+    ctx.drawImage(spriteImg, def.col*cw, def.row*ch, cw, ch, 0, 0, cw, ch);
+    return true;
+  }
+
+  // ── Bubbles ──
+  function createBubbles() {
+    const el = document.getElementById("bubbles");
+    el.innerHTML = "";
+    for (let i = 0; i < 15; i++) {
+      const b = document.createElement("div");
+      b.className = "bubble";
+      const s = Math.random()*30+8;
+      b.style.width  = s+"px";
+      b.style.height = s+"px";
+      b.style.left   = Math.random()*100+"%";
+      b.style.animationDuration = (Math.random()*10+8)+"s";
+      b.style.animationDelay    = (Math.random()*10)+"s";
+      el.appendChild(b);
+    }
+  }
+
+  // ── Timer ──
+  function startTimer() {
+    if (timerInterval) return;
+    timerInterval = setInterval(() => { seconds++; showTime(); }, 1000);
+  }
+  function stopTimer()  { clearInterval(timerInterval); timerInterval = null; }
+  function showTime() {
+    const m = Math.floor(seconds/60), s = seconds%60;
+    document.getElementById("timerDisplay").textContent = m+":"+String(s).padStart(2,"0");
+  }
+
+  // ── Difficulty ──
+  function setDifficulty(btn, n) {
+    document.querySelectorAll(".diff-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    totalPairs = n;
+    startGame();
+  }
+
+  // ── Shuffle ──
+  function shuffle(a) {
+    for (let i=a.length-1; i>0; i--) {
+      const j = Math.floor(Math.random()*(i+1));
+      [a[i],a[j]] = [a[j],a[i]];
+    }
+    return a;
+  }
+
+  // ── Start ──
+  async function startGame() {
+    stopTimer(); seconds=0; moves=0; matchedPairs=0;
+    flippedCards=[]; isLocked=false; gameStarted=false;
+    showTime();
+    document.getElementById("moveCount").textContent = "0";
+    document.getElementById("pairCount").textContent = "0 / "+totalPairs;
+    document.getElementById("victoryOverlay").classList.remove("show");
+
+    if (!spriteImg) await loadSprite();
+
+    const picked = shuffle([...cardDefs]).slice(0, totalPairs);
+    cards = shuffle([...picked,...picked].map((d,i) => ({...d, uid:i, isFlipped:false, isMatched:false})));
+
+    const grid = document.getElementById("cardGrid");
+    grid.style.gridTemplateColumns = totalPairs<=8 ? "repeat(4,1fr)" : "repeat(5,1fr)";
+    grid.innerHTML = "";
+
+    cards.forEach((card, idx) => {
+      const slot = document.createElement("div");
+      slot.className = "card-slot";
+      slot.onclick = () => flipCard(idx);
+
+      const inner = document.createElement("div");
+      inner.className = "card-inner";
+
+      // back
+      const back = document.createElement("div");
+      back.className = "card-face card-back";
+      back.innerHTML = '<span class="question-mark">🐚</span><div class="wave-pattern"></div>';
+
+      // front
+      const front = document.createElement("div");
+      front.className = "card-face card-front";
+      front.style.background = card.bg;
+
+      const cvs = document.createElement("canvas");
+      if (!drawCard(card, cvs)) {
+        front.innerHTML = '<div style="text-align:center"><div style="font-size:2.5rem">'+card.emoji+'</div>'
+          +'<div style="font-size:.75rem;color:#fff;font-weight:700;margin-top:4px">'+card.name+'</div></div>';
+      } else {
+        front.appendChild(cvs);
+      }
+
+      inner.append(back, front);
+      slot.appendChild(inner);
+      grid.appendChild(slot);
+    });
+  }
+
+  // ── Flip ──
+  function flipCard(idx) {
+    if (isLocked) return;
+    const c = cards[idx];
+    if (c.isFlipped || c.isMatched) return;
+
+    if (!gameStarted) { gameStarted = true; startTimer(); }
+
+    c.isFlipped = true;
+    document.querySelectorAll(".card-slot")[idx].classList.add("flipped");
+    flippedCards.push(idx);
+
+    if (flippedCards.length === 2) { moves++; document.getElementById("moveCount").textContent = moves; checkMatch(); }
+  }
+
+  function checkMatch() {
+    isLocked = true;
+    const [a,b] = flippedCards;
+    const ca = cards[a], cb = cards[b];
+    const slots = document.querySelectorAll(".card-slot");
+
+    if (ca.id === cb.id) {
+      ca.isMatched = cb.isMatched = true;
+      matchedPairs++;
+      document.getElementById("pairCount").textContent = matchedPairs+" / "+totalPairs;
+      slots[a].classList.add("matched");
+      slots[b].classList.add("matched");
+      setTimeout(() => { flippedCards=[]; isLocked=false; if (matchedPairs===totalPairs) victory(); }, 400);
+    } else {
+      slots[a].classList.add("wrong");
+      slots[b].classList.add("wrong");
+      setTimeout(() => {
+        ca.isFlipped = cb.isFlipped = false;
+        slots[a].classList.remove("flipped","wrong");
+        slots[b].classList.remove("flipped","wrong");
+        flippedCards=[]; isLocked=false;
+      }, 800);
+    }
+  }
+
+  // ── Victory ──
+  function victory() {
+    stopTimer();
+    const ratio = moves / totalPairs;
+    let stars = ratio>2.5 ? 1 : ratio>1.8 ? 2 : 3;
+    const score = Math.max(100, Math.round(10000/(moves+seconds/10)));
+
+    document.getElementById("victoryMoves").textContent = moves;
+    const m=Math.floor(seconds/60), s=seconds%60;
+    document.getElementById("victoryTime").textContent  = m+":"+String(s).padStart(2,"0");
+    document.getElementById("victoryScore").textContent = score;
+    document.getElementById("starRating").textContent   = "⭐".repeat(stars)+"☆".repeat(3-stars);
+
+    setTimeout(() => { document.getElementById("victoryOverlay").classList.add("show"); launchConfetti(); }, 500);
+  }
+
+  // ── Confetti ──
+  function launchConfetti() {
+    const cv = document.getElementById("confettiCanvas");
+    const ctx = cv.getContext("2d");
+    cv.width = innerWidth; cv.height = innerHeight;
+
+    const colors = ["#ff6b9d","#c44dff","#4dc9f6","#ffd93d","#90be6d","#f9c74f"];
+    const bits = Array.from({length:120}, () => ({
+      x: Math.random()*cv.width, y: Math.random()*-cv.height,
+      w: Math.random()*10+5, h: Math.random()*6+3,
+      color: colors[Math.floor(Math.random()*colors.length)],
+      vy: Math.random()*3+2, vx: Math.random()*2-1,
+      rot: Math.random()*360, rs: Math.random()*6-3, op: 1
+    }));
+
+    let frame = 0;
+    (function draw() {
+      ctx.clearRect(0,0,cv.width,cv.height);
+      let live = false;
+      bits.forEach(c => {
+        if (c.y < cv.height+20) live = true;
+        c.y += c.vy; c.x += c.vx; c.rot += c.rs; c.op = Math.max(0, c.op-0.003);
+        ctx.save();
+        ctx.translate(c.x,c.y); ctx.rotate(c.rot*Math.PI/180);
+        ctx.globalAlpha = c.op; ctx.fillStyle = c.color;
+        ctx.fillRect(-c.w/2,-c.h/2,c.w,c.h);
+        ctx.restore();
+      });
+      if (live && ++frame<300) requestAnimationFrame(draw);
+      else ctx.clearRect(0,0,cv.width,cv.height);
+    })();
+  }
+
+  // ── Init ──
+  createBubbles();
+  startGame();
+</script>
+</body>
+</html>
