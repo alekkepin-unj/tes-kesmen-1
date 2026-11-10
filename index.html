@@ -3,7 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🐙 Find & Match - Sea Creatures 🐠</title>
+  <title>🐙 Find & Match: Ciri Khas Hewan Laut 🐠</title>
+  
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#0a1628">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Find & Match">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="manifest" href="manifest.json">
+
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap');
 
@@ -13,6 +23,7 @@
       --accent-2: #c44dff;
       --accent-3: #4dc9f6;
       --accent-4: #ffd93d;
+      --accent-green: #38ef7d;
       --text-primary: #ffffff;
       --text-secondary: #8899bb;
     }
@@ -24,14 +35,15 @@
       min-height: 100vh;
       font-family: 'Fredoka', 'Segoe UI', system-ui, sans-serif;
       overflow-x: hidden;
+      color: var(--text-primary);
     }
 
     .ocean-bg {
       position: fixed; inset: 0;
       background:
-        radial-gradient(ellipse at 20% 50%, rgba(0,100,200,0.15) 0%, transparent 50%),
-        radial-gradient(ellipse at 80% 20%, rgba(100,0,200,0.1) 0%, transparent 50%),
-        radial-gradient(ellipse at 50% 80%, rgba(0,200,150,0.1) 0%, transparent 50%),
+        radial-gradient(ellipse at 20% 50%, rgba(0,100,200,0.18) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 20%, rgba(100,0,200,0.12) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 80%, rgba(0,200,150,0.12) 0%, transparent 50%),
         var(--game-bg);
       z-index: 0;
     }
@@ -57,87 +69,196 @@
 
     .game-container {
       position: relative; z-index: 2;
-      max-width: 800px; margin: 0 auto; padding: 20px;
+      max-width: 860px; margin: 0 auto; padding: 18px 14px;
     }
 
     /* ── Header ── */
-    .game-header { text-align: center; margin-bottom: 24px; }
+    .game-header { text-align: center; margin-bottom: 14px; }
 
     .game-title {
-      font-size: 2.5rem; font-weight: 700;
+      font-size: 2.3rem; font-weight: 700;
       background: linear-gradient(135deg, var(--accent-4), var(--accent-1), var(--accent-2));
       -webkit-background-clip: text; -webkit-text-fill-color: transparent;
       background-clip: text;
+      letter-spacing: -0.5px;
     }
 
     .game-subtitle {
       color: var(--text-secondary); font-size: 0.95rem;
-      letter-spacing: 2px; text-transform: uppercase;
+      letter-spacing: 1.5px; text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    .game-instruction {
+      margin-top: 8px;
+      font-size: 0.88rem;
+      color: #ffd93d;
+      background: rgba(255, 217, 61, 0.1);
+      border: 1px dashed rgba(255, 217, 61, 0.35);
+      display: inline-block;
+      padding: 6px 18px;
+      border-radius: 30px;
+      line-height: 1.4;
+    }
+
+    /* ── Mode Selector (Terbuka vs Tertutup) ── */
+    .mode-selector {
+      display: flex; justify-content: center; gap: 8px; margin-bottom: 14px;
+    }
+
+    .mode-btn {
+      padding: 6px 16px; border-radius: 50px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-secondary);
+      font-size: 0.82rem; font-weight: 600; cursor: pointer;
+      transition: all 0.3s; font-family: inherit;
+    }
+
+    .mode-btn:hover { color: #fff; border-color: rgba(255,255,255,0.4); }
+
+    .mode-btn.active {
+      background: linear-gradient(135deg, rgba(77, 201, 246, 0.3), rgba(196, 77, 255, 0.3));
+      border-color: var(--accent-3);
+      color: #ffffff;
+      box-shadow: 0 0 15px rgba(77, 201, 246, 0.3);
+    }
+
+    /* ── Match Toast Notification ── */
+    .match-toast {
+      position: fixed;
+      top: 18px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-100px);
+      background: linear-gradient(135deg, #0d3b2e, #145942);
+      color: #38ef7d;
+      border: 1px solid rgba(56, 239, 125, 0.6);
+      padding: 10px 22px;
+      border-radius: 50px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      z-index: 1000;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-align: center;
+      max-width: 90vw;
+    }
+
+    .match-toast.show {
+      transform: translateX(-50%) translateY(0);
     }
 
     /* ── Stats ── */
     .stats-bar {
-      display: flex; justify-content: center; gap: 16px;
-      margin-bottom: 20px; flex-wrap: wrap;
+      display: flex; justify-content: center; gap: 12px;
+      margin-bottom: 16px; flex-wrap: wrap;
     }
 
     .stat-card {
       background: rgba(255,255,255,0.06);
       border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 16px; padding: 10px 20px;
-      text-align: center; backdrop-filter: blur(10px); min-width: 110px;
+      border-radius: 16px; padding: 7px 18px;
+      text-align: center; backdrop-filter: blur(10px); min-width: 95px;
     }
 
     .stat-label {
-      font-size: 0.7rem; color: var(--text-secondary);
+      font-size: 0.68rem; color: var(--text-secondary);
       text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 2px;
     }
 
-    .stat-value { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); }
+    .stat-value { font-size: 1.35rem; font-weight: 700; color: var(--text-primary); }
     .stat-value.moves { color: var(--accent-3); }
     .stat-value.pairs { color: var(--accent-4); }
     .stat-value.timer { color: var(--accent-1); }
 
+    /* ── Difficulty ── */
+    .difficulty-selector {
+      display: flex; justify-content: center; gap: 8px; margin-bottom: 16px;
+    }
+
+    .diff-btn {
+      padding: 6px 16px; border-radius: 50px;
+      border: 2px solid rgba(255,255,255,0.15);
+      background: transparent; color: var(--text-secondary);
+      font-size: 0.82rem; font-weight: 600; cursor: pointer;
+      transition: all 0.3s; text-transform: uppercase;
+      letter-spacing: 1px; font-family: inherit;
+    }
+
+    .diff-btn:hover { border-color: rgba(255,255,255,0.3); color: var(--text-primary); }
+
+    .diff-btn.active {
+      background: linear-gradient(135deg, var(--accent-3), var(--accent-2));
+      border-color: transparent; color: white;
+    }
+
     /* ── Grid ── */
     .card-grid {
-      display: grid; grid-template-columns: repeat(4, 1fr);
-      gap: 12px; max-width: 600px; margin: 0 auto 24px;
+      display: grid;
+      gap: 12px;
+      max-width: 760px;
+      margin: 0 auto 22px;
     }
 
-    @media (max-width: 500px) {
+    @media (max-width: 600px) {
       .card-grid { gap: 8px; }
-      .game-title { font-size: 1.8rem; }
+      .game-title { font-size: 1.7rem; }
+      .game-instruction { font-size: 0.78rem; padding: 6px 12px; }
     }
 
-    /* ── Card ── */
-    .card-slot { aspect-ratio: 0.7; perspective: 800px; cursor: pointer; }
+    /* ── Card Slot ── */
+    .card-slot {
+      aspect-ratio: 0.72;
+      perspective: 900px;
+      cursor: pointer;
+      transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .card-slot:hover {
+      transform: translateY(-4px) scale(1.02);
+    }
 
     .card-inner {
       position: relative; width: 100%; height: 100%;
-      transition: transform 0.5s cubic-bezier(0.4,0,0.2,1);
+      transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
       transform-style: preserve-3d;
     }
 
-    .card-slot.flipped .card-inner { transform: rotateY(180deg); }
+    /* Di Mode Terbuka (Revealed), kartu langsung menghadap ke atas */
+    .card-grid.mode-revealed .card-inner {
+      transform: rotateY(180deg) !important;
+    }
+
+    /* Di Mode Tertutup (Memory), hanya saat flipped menghadap ke atas */
+    .card-grid.mode-memory .card-slot.flipped .card-inner {
+      transform: rotateY(180deg);
+    }
 
     .card-face {
       position: absolute; inset: 0;
-      backface-visibility: hidden; border-radius: 14px; overflow: hidden;
+      backface-visibility: hidden;
+      border-radius: 14px;
+      overflow: hidden;
     }
 
+    /* ── Card Back (Mode Tertutup) ── */
     .card-back {
-      background: linear-gradient(135deg, #1e3a5f, #2a1a4e);
-      border: 2px solid rgba(255,255,255,0.12);
+      background: linear-gradient(135deg, #162b48, #2a164a);
+      border: 2px solid rgba(255,255,255,0.14);
       display: flex; align-items: center; justify-content: center;
       transition: all 0.2s;
     }
 
     .card-back:hover {
-      border-color: rgba(255,255,255,0.3);
-      box-shadow: 0 0 20px rgba(100,150,255,0.2);
+      border-color: rgba(255,255,255,0.35);
+      box-shadow: 0 0 18px rgba(100,150,255,0.25);
     }
 
-    .card-back .question-mark { font-size: 2.2rem; opacity: 0.5; }
+    .card-back .question-mark { font-size: 2rem; opacity: 0.6; }
 
     .card-back .wave-pattern {
       position: absolute; bottom: 0; left: 0; right: 0; height: 40%;
@@ -145,26 +266,161 @@
         rgba(255,255,255,0.03) 5px, rgba(255,255,255,0.03) 10px);
     }
 
+    /* ── Card Front (Base) ── */
     .card-front {
       transform: rotateY(180deg);
-      display: flex; align-items: center; justify-content: center;
-      border: 2px solid rgba(255,255,255,0.15);
+      display: flex; flex-direction: column;
+      border: 2px solid rgba(255,255,255,0.18);
+      background: #14223d;
+      position: relative;
+      transition: border-color 0.25s, box-shadow 0.25s;
     }
 
-    .card-front canvas {
-      width: 100%; height: 100%; object-fit: cover; border-radius: 12px;
+    /* Image Card Face */
+    .card-front.face-image {
+      background: #101d36;
+      overflow: hidden;
+    }
+
+    .card-front.face-image img.card-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      border-radius: 12px;
+    }
+
+    .badge-tag {
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      padding: 3px 7px;
+      border-radius: 12px;
+      text-transform: uppercase;
+      z-index: 3;
+      backdrop-filter: blur(6px);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+
+    .badge-tag.badge-img {
+      background: rgba(14, 165, 233, 0.88);
+      color: #ffffff;
+      border: 1px solid rgba(255,255,255,0.4);
+    }
+
+    .card-title-bar {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      background: linear-gradient(transparent, rgba(10, 22, 40, 0.95) 45%);
+      color: #ffffff;
+      font-size: 0.74rem;
+      font-weight: 700;
+      padding: 16px 4px 6px;
+      text-align: center;
+      letter-spacing: 0.4px;
+      z-index: 3;
+    }
+
+    /* Trait Card Face */
+    .card-front.face-trait {
+      background: linear-gradient(150deg, #182848, #221a42);
+      padding: 8px 6px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      text-align: center;
+      border: 2px solid rgba(255, 217, 61, 0.3);
+    }
+
+    .trait-top-badge {
+      font-size: 0.62rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 12px;
+      background: rgba(255, 217, 61, 0.2);
+      color: #ffd93d;
+      border: 1px solid rgba(255, 217, 61, 0.4);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .trait-body {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2px 4px;
+    }
+
+    .trait-text {
+      color: #ffffff;
+      font-size: 0.75rem;
+      font-weight: 600;
+      line-height: 1.35;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    }
+
+    @media (max-width: 480px) {
+      .trait-text { font-size: 0.68rem; line-height: 1.25; }
+      .badge-tag, .trait-top-badge { font-size: 0.55rem; padding: 2px 5px; }
+      .card-title-bar { font-size: 0.65rem; padding-bottom: 3px; }
+    }
+
+    .trait-footer {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--accent-3);
+      background: rgba(255, 255, 255, 0.08);
+      padding: 3px 8px;
+      border-radius: 10px;
+      width: 95%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: all 0.3s;
+    }
+
+    /* ── Status Interaksi (Selected, Matched, Wrong) ── */
+    .card-slot.selected {
+      transform: translateY(-6px) scale(1.05);
+    }
+
+    .card-slot.selected .card-front {
+      border-color: #ffd93d !important;
+      box-shadow: 0 0 24px rgba(255, 217, 61, 0.7), inset 0 0 10px rgba(255, 217, 61, 0.3) !important;
+    }
+
+    .card-slot.matched {
+      cursor: default;
+      transform: none !important;
     }
 
     .card-slot.matched .card-front {
-      border-color: rgba(80,255,160,0.5);
-      box-shadow: 0 0 20px rgba(80,255,160,0.2);
+      border-color: rgba(56, 239, 125, 0.9) !important;
+      box-shadow: 0 0 20px rgba(56, 239, 125, 0.4) !important;
+      opacity: 0.85;
+    }
+
+    .card-slot.matched .trait-footer {
+      color: #0a1628;
+      background: #38ef7d;
+      font-weight: 700;
     }
 
     .card-slot.matched .card-inner { animation: match-bounce 0.5s ease; }
 
     @keyframes match-bounce {
       0%,100% { transform: rotateY(180deg) scale(1); }
-      50%     { transform: rotateY(180deg) scale(1.08); }
+      50%     { transform: rotateY(180deg) scale(1.06); }
+    }
+
+    .card-slot.wrong .card-front {
+      border-color: #ff4757 !important;
+      box-shadow: 0 0 22px rgba(255, 71, 87, 0.7) !important;
     }
 
     .card-slot.wrong .card-inner { animation: shake 0.4s ease; }
@@ -180,8 +436,8 @@
 
     .btn-restart {
       background: linear-gradient(135deg, var(--accent-2), var(--accent-1));
-      color: white; border: none; padding: 12px 32px; border-radius: 50px;
-      font-size: 1rem; font-weight: 600; cursor: pointer;
+      color: white; border: none; padding: 12px 30px; border-radius: 50px;
+      font-size: 0.95rem; font-weight: 600; cursor: pointer;
       transition: all 0.3s; letter-spacing: 0.5px; font-family: inherit;
     }
 
@@ -190,27 +446,22 @@
       box-shadow: 0 8px 25px rgba(196,77,255,0.4);
     }
 
-    .difficulty-selector {
-      display: flex; justify-content: center; gap: 10px; margin-bottom: 20px;
+    .btn-install {
+      display: none;
+      background: linear-gradient(135deg, var(--accent-3), #38ef7d);
+      color: #0a1628; border: none; padding: 12px 24px; border-radius: 50px;
+      font-size: 0.95rem; font-weight: 700; cursor: pointer;
+      transition: all 0.3s; letter-spacing: 0.5px; font-family: inherit;
+      margin-left: 10px;
+      box-shadow: 0 4px 15px rgba(56, 239, 125, 0.3);
     }
 
-    .diff-btn {
-      padding: 8px 20px; border-radius: 50px;
-      border: 2px solid rgba(255,255,255,0.15);
-      background: transparent; color: var(--text-secondary);
-      font-size: 0.85rem; font-weight: 600; cursor: pointer;
-      transition: all 0.3s; text-transform: uppercase;
-      letter-spacing: 1px; font-family: inherit;
+    .btn-install:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(56, 239, 125, 0.5);
     }
 
-    .diff-btn:hover { border-color: rgba(255,255,255,0.3); color: var(--text-primary); }
-
-    .diff-btn.active {
-      background: linear-gradient(135deg, var(--accent-3), var(--accent-2));
-      border-color: transparent; color: white;
-    }
-
-    /* ── Victory ── */
+    /* ── Victory Overlay ── */
     .victory-overlay {
       display: none; position: fixed; inset: 0; z-index: 100;
       background: rgba(10,22,40,0.92); backdrop-filter: blur(8px);
@@ -220,11 +471,11 @@
     .victory-overlay.show { display: flex; }
 
     .victory-card {
-      background: linear-gradient(135deg, rgba(30,50,80,0.95), rgba(40,20,70,0.95));
-      border: 1px solid rgba(255,255,255,0.15);
-      border-radius: 24px; padding: 40px 50px; text-align: center;
+      background: linear-gradient(135deg, rgba(25,45,75,0.95), rgba(35,20,65,0.95));
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 24px; padding: 36px 40px; text-align: center;
       animation: victory-pop 0.6s cubic-bezier(0.175,0.885,0.32,1.275);
-      max-width: 400px; width: 90%;
+      max-width: 420px; width: 90%;
     }
 
     @keyframes victory-pop {
@@ -233,7 +484,7 @@
     }
 
     .victory-emoji {
-      font-size: 4rem; margin-bottom: 10px;
+      font-size: 3.8rem; margin-bottom: 8px;
       animation: emoji-float 2s ease-in-out infinite;
     }
 
@@ -246,12 +497,12 @@
       font-size: 2rem; font-weight: 700;
       background: linear-gradient(135deg, var(--accent-4), var(--accent-1));
       -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
 
-    .victory-stats { color: var(--text-secondary); font-size: 1.1rem; margin-bottom: 8px; }
+    .victory-stats { color: var(--text-secondary); font-size: 1.05rem; margin-bottom: 6px; }
     .victory-stats span { color: var(--accent-3); font-weight: 700; }
-    .star-rating { font-size: 2rem; margin: 16px 0; letter-spacing: 4px; }
+    .star-rating { font-size: 2rem; margin: 14px 0; letter-spacing: 4px; }
 
     .confetti-canvas {
       position: fixed; inset: 0; pointer-events: none; z-index: 101;
@@ -264,11 +515,17 @@
 <div class="bubbles" id="bubbles"></div>
 <canvas class="confetti-canvas" id="confettiCanvas"></canvas>
 
+<!-- Match Toast Notification -->
+<div class="match-toast" id="matchToast">
+  <span id="toastIcon">✨</span>
+  <span id="toastText">Pasangan Cocok!</span>
+</div>
+
 <!-- Victory Overlay -->
 <div class="victory-overlay" id="victoryOverlay">
   <div class="victory-card">
     <div class="victory-emoji">🎉</div>
-    <div class="victory-title">Selamat!</div>
+    <div class="victory-title">Hebat Sekali!</div>
     <div class="star-rating" id="starRating"></div>
     <div class="victory-stats">Langkah: <span id="victoryMoves">0</span></div>
     <div class="victory-stats">Waktu: <span id="victoryTime">0:00</span></div>
@@ -280,12 +537,22 @@
 <div class="game-container">
   <div class="game-header">
     <div class="game-title">🌊 Find & Match</div>
-    <div class="game-subtitle">Sea Creatures Edition</div>
+    <div class="game-subtitle">Edisi Ciri Khas Hewan Laut</div>
+    
+    <!-- Mode Switcher -->
+    <div class="mode-selector">
+      <button class="mode-btn active" id="btnModeRevealed" onclick="setGameMode(true)">👁️ Kartu Terbuka</button>
+      <button class="mode-btn" id="btnModeMemory" onclick="setGameMode(false)">🔒 Kartu Tertutup (Memory)</button>
+    </div>
+
+    <div class="game-instruction" id="gameInstruction">
+      💡 Klik 1 kartu <b>🖼️ GAMBAR</b>, lalu klik kartu <b>💡 CIRI KHAS</b> pasangannya!
+    </div>
   </div>
 
   <div class="difficulty-selector">
-    <button class="diff-btn active" onclick="setDifficulty(this,6)">Mudah (6)</button>
-    <button class="diff-btn" onclick="setDifficulty(this,8)">Sedang (8)</button>
+    <button class="diff-btn" onclick="setDifficulty(this,4)">Mudah (4)</button>
+    <button class="diff-btn active" onclick="setDifficulty(this,6)">Sedang (6)</button>
     <button class="diff-btn" onclick="setDifficulty(this,10)">Sulit (10)</button>
   </div>
 
@@ -304,70 +571,138 @@
     </div>
   </div>
 
-  <div class="card-grid" id="cardGrid"></div>
+  <div class="card-grid mode-revealed" id="cardGrid"></div>
 
   <div class="btn-container">
     <button class="btn-restart" onclick="startGame()">🔄 Mulai Ulang</button>
+    <button class="btn-install" id="installBtn" onclick="installPWA()">📲 Pasang Aplikasi</button>
   </div>
 </div>
 
 <script>
   // ── State ──
   let totalPairs = 6;
+  let isRevealedMode = true; // DEFAULT: Semua kartu terbuka/revealed!
   let cards = [];
-  let flippedCards = [];
+  let selectedCards = [];
   let matchedPairs = 0;
   let moves = 0;
   let timerInterval = null;
   let seconds = 0;
   let isLocked = false;
   let gameStarted = false;
-  let spriteImg = null;
-  let spriteLoaded = false;
+  let toastTimeout = null;
 
-  // Card defs — 2 rows × 5 cols in the sprite
+  // ── Database 10 Hewan Laut & Ciri Khas Unik ──
   const cardDefs = [
-    { id:1,  name:"Kuda Laut",   emoji:"🦈", col:0, row:0, bg:"#f4a261" },
-    { id:2,  name:"Gurita",      emoji:"🐙", col:1, row:0, bg:"#9b5de5" },
-    { id:3,  name:"Ikan Buntal", emoji:"🐡", col:2, row:0, bg:"#2ec4b6" },
-    { id:4,  name:"Narwhal",     emoji:"🦄", col:3, row:0, bg:"#f4845f" },
-    { id:5,  name:"Penyu",       emoji:"🐢", col:4, row:0, bg:"#f9c74f" },
-    { id:6,  name:"Bintang Laut",emoji:"⭐", col:0, row:1, bg:"#f9c74f" },
-    { id:7,  name:"Lumba-lumba", emoji:"🐬", col:1, row:1, bg:"#4895ef" },
-    { id:8,  name:"Kepiting",    emoji:"🦀", col:2, row:1, bg:"#2ec4b6" },
-    { id:9,  name:"Ubur-ubur",   emoji:"🪸", col:3, row:1, bg:"#f4845f" },
-    { id:10, name:"Ikan",        emoji:"🐠", col:4, row:1, bg:"#90be6d" },
+    {
+      id: 1,
+      name: "Hiu",
+      emoji: "🦈",
+      imageSrc: "cards/card_1.png",
+      shortTrait: "Predator laut bergigi runcing tajam, indra penciuman darah sangat kuat & sirip punggung khas!"
+    },
+    {
+      id: 2,
+      name: "Gurita",
+      emoji: "🐙",
+      imageSrc: "cards/card_2.png",
+      shortTrait: "Punya 8 tentakel, 3 jantung, & dapat menyemprotkan tinta hitam pekat saat bahaya!"
+    },
+    {
+      id: 3,
+      name: "Ikan Buntal",
+      emoji: "🐡",
+      imageSrc: "cards/card_3.png",
+      shortTrait: "Bisa menggembungkan tubuh bulat berduri besar seperti balon saat terancam musuh!"
+    },
+    {
+      id: 4,
+      name: "Ikan Pari",
+      emoji: "🤿",
+      imageSrc: "cards/card_4.png",
+      shortTrait: "Tubuh pipih melebar melayang seperti sayap terbang & memiliki ekor panjang berduri sengat!"
+    },
+    {
+      id: 5,
+      name: "Penyu",
+      emoji: "🐢",
+      imageSrc: "cards/card_5.png",
+      shortTrait: "Punya tempurung keras pelindung, perenang tangguh & selalu naik ke pantai untuk bertelur!"
+    },
+    {
+      id: 6,
+      name: "Bintang Laut",
+      emoji: "⭐",
+      imageSrc: "cards/card_6.png",
+      shortTrait: "Bentuk bintang bersudut 5 lengan & memiliki kemampuan ajaib meregenerasi lengan yang putus!"
+    },
+    {
+      id: 7,
+      name: "Lumba-lumba",
+      emoji: "🐬",
+      imageSrc: "cards/card_7.png",
+      shortTrait: "Mamalia laut sangat cerdas, suka melompat gembira & bernapas dengan paru-paru di permukaan!"
+    },
+    {
+      id: 8,
+      name: "Kepiting",
+      emoji: "🦀",
+      imageSrc: "cards/card_8.png",
+      shortTrait: "Punya sepasang capit depan yang kokoh & cara berjalan khas yang selalu menyamping (miring)!"
+    },
+    {
+      id: 9,
+      name: "Ubur-ubur",
+      emoji: "🪼",
+      imageSrc: "cards/card_9.png",
+      shortTrait: "Tubuh kenyal transparan tanpa tulang dan otak, melayang di air dengan tentakel menyengat!"
+    },
+    {
+      id: 10,
+      name: "Ikan Badut",
+      emoji: "🐠",
+      imageSrc: "cards/card_10.png",
+      shortTrait: "Ikan oranye bergaris belang cerah yang kebal racun & hidup bersahabat di dalam anemon laut!"
+    }
   ];
 
-  // ── Sprite ──
-  function loadSprite() {
-    return new Promise(resolve => {
-      spriteImg = new Image();
-      spriteImg.onload  = () => { spriteLoaded = true;  resolve(); };
-      spriteImg.onerror = () => { spriteLoaded = false; resolve(); };
-      spriteImg.src = "cards.png";
-    });
+  // ── Switch Mode (Terbuka vs Tertutup) ──
+  function setGameMode(revealed) {
+    isRevealedMode = revealed;
+    document.getElementById("btnModeRevealed").classList.toggle("active", revealed);
+    document.getElementById("btnModeMemory").classList.toggle("active", !revealed);
+    
+    const instruction = document.getElementById("gameInstruction");
+    if (revealed) {
+      instruction.innerHTML = "💡 Klik 1 kartu <b>🖼️ GAMBAR</b>, lalu klik kartu <b>💡 CIRI KHAS</b> pasangannya!";
+    } else {
+      instruction.innerHTML = "💡 Buka kartu satu per satu & ingat posisinya untuk mencocokkan pasangan!";
+    }
+
+    startGame();
   }
 
-  function drawCard(def, canvas) {
-    if (!spriteLoaded) return false;
-    const ctx = canvas.getContext("2d");
-    const cw = spriteImg.naturalWidth  / 5;
-    const ch = spriteImg.naturalHeight / 2;
-    canvas.width  = cw;
-    canvas.height = ch;
-    ctx.drawImage(spriteImg, def.col*cw, def.row*ch, cw, ch, 0, 0, cw, ch);
-    return true;
+  // ── Toast Notification ──
+  function showToast(icon, text) {
+    const toast = document.getElementById("matchToast");
+    document.getElementById("toastIcon").textContent = icon;
+    document.getElementById("toastText").textContent = text;
+    toast.classList.add("show");
+    if (toastTimeout) clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => {
+      toast.classList.remove("show");
+    }, 2400);
   }
 
-  // ── Bubbles ──
+  // ── Bubbles Background ──
   function createBubbles() {
     const el = document.getElementById("bubbles");
     el.innerHTML = "";
     for (let i = 0; i < 15; i++) {
       const b = document.createElement("div");
       b.className = "bubble";
-      const s = Math.random()*30+8;
+      const s = Math.random()*28+8;
       b.style.width  = s+"px";
       b.style.height = s+"px";
       b.style.left   = Math.random()*100+"%";
@@ -405,48 +740,105 @@
     return a;
   }
 
-  // ── Start ──
-  async function startGame() {
-    stopTimer(); seconds=0; moves=0; matchedPairs=0;
-    flippedCards=[]; isLocked=false; gameStarted=false;
+  // ── Start Game ──
+  function startGame() {
+    stopTimer(); seconds = 0; moves = 0; matchedPairs = 0;
+    selectedCards = []; isLocked = false; gameStarted = false;
     showTime();
     document.getElementById("moveCount").textContent = "0";
-    document.getElementById("pairCount").textContent = "0 / "+totalPairs;
+    document.getElementById("pairCount").textContent = "0 / " + totalPairs;
     document.getElementById("victoryOverlay").classList.remove("show");
 
-    if (!spriteImg) await loadSprite();
-
+    // Pilih sejumlah hewan sesuai tingkat kesulitan
     const picked = shuffle([...cardDefs]).slice(0, totalPairs);
-    cards = shuffle([...picked,...picked].map((d,i) => ({...d, uid:i, isFlipped:false, isMatched:false})));
+
+    // Bentuk sepasang kartu: 1 KARTU GAMBAR & 1 KARTU CIRI KHAS
+    let deck = [];
+    picked.forEach(animal => {
+      // 1. Kartu GAMBAR
+      deck.push({
+        ...animal,
+        cardType: "image",
+        matchId: animal.id,
+        isFlipped: isRevealedMode,
+        isMatched: false
+      });
+      // 2. Kartu CIRI KHAS
+      deck.push({
+        ...animal,
+        cardType: "trait",
+        matchId: animal.id,
+        isFlipped: isRevealedMode,
+        isMatched: false
+      });
+    });
+
+    cards = shuffle(deck).map((c, i) => ({ ...c, uid: i }));
 
     const grid = document.getElementById("cardGrid");
-    grid.style.gridTemplateColumns = totalPairs<=8 ? "repeat(4,1fr)" : "repeat(5,1fr)";
+    grid.className = "card-grid " + (isRevealedMode ? "mode-revealed" : "mode-memory");
+
+    // Atur jumlah kolom responsif
+    if (totalPairs === 4) {
+      grid.style.gridTemplateColumns = "repeat(4, 1fr)";
+    } else if (totalPairs === 6) {
+      grid.style.gridTemplateColumns = "repeat(4, 1fr)";
+    } else {
+      grid.style.gridTemplateColumns = window.innerWidth <= 600 ? "repeat(4, 1fr)" : "repeat(5, 1fr)";
+    }
     grid.innerHTML = "";
 
     cards.forEach((card, idx) => {
       const slot = document.createElement("div");
-      slot.className = "card-slot";
-      slot.onclick = () => flipCard(idx);
+      slot.className = "card-slot" + (card.isFlipped ? " flipped" : "");
+      slot.onclick = () => onCardClick(idx);
 
       const inner = document.createElement("div");
       inner.className = "card-inner";
 
-      // back
+      // ── Bagian Belakang Kartu ──
       const back = document.createElement("div");
       back.className = "card-face card-back";
       back.innerHTML = '<span class="question-mark">🐚</span><div class="wave-pattern"></div>';
 
-      // front
+      // ── Bagian Depan Kartu ──
       const front = document.createElement("div");
-      front.className = "card-face card-front";
-      front.style.background = card.bg;
+      front.className = "card-face card-front " + (card.cardType === "image" ? "face-image" : "face-trait");
 
-      const cvs = document.createElement("canvas");
-      if (!drawCard(card, cvs)) {
-        front.innerHTML = '<div style="text-align:center"><div style="font-size:2.5rem">'+card.emoji+'</div>'
-          +'<div style="font-size:.75rem;color:#fff;font-weight:700;margin-top:4px">'+card.name+'</div></div>';
+      if (card.cardType === "image") {
+        // Tipe GAMBAR
+        const badge = document.createElement("div");
+        badge.className = "badge-tag badge-img";
+        badge.innerHTML = "🖼️ GAMBAR";
+
+        const titleBar = document.createElement("div");
+        titleBar.className = "card-title-bar";
+        titleBar.textContent = card.name;
+
+        const img = document.createElement("img");
+        img.className = "card-img";
+        img.src = card.imageSrc;
+        img.alt = card.name;
+        img.onerror = () => {
+          front.innerHTML = `
+            <div style="text-align:center;margin:auto">
+              <div style="font-size:2.4rem">${card.emoji}</div>
+              <div style="font-size:.75rem;color:#fff;font-weight:700;margin-top:4px">${card.name}</div>
+            </div>`;
+        };
+
+        front.append(badge, img, titleBar);
       } else {
-        front.appendChild(cvs);
+        // Tipe CIRI KHAS
+        front.innerHTML = `
+          <div class="trait-top-badge">💡 CIRI KHAS</div>
+          <div class="trait-body">
+            <div class="trait-text">"${card.shortTrait}"</div>
+          </div>
+          <div class="trait-footer" id="trait-foot-${card.uid}">
+            ${isRevealedMode ? "Pilih pasanganku! 🔍" : "Siapakah aku? ❓"}
+          </div>
+        `;
       }
 
       inner.append(back, front);
@@ -455,98 +847,201 @@
     });
   }
 
-  // ── Flip ──
-  function flipCard(idx) {
+  // ── Klik Kartu ──
+  function onCardClick(idx) {
     if (isLocked) return;
     const c = cards[idx];
-    if (c.isFlipped || c.isMatched) return;
+    if (c.isMatched) return; // Sudah cocok, abaikan
 
     if (!gameStarted) { gameStarted = true; startTimer(); }
 
-    c.isFlipped = true;
-    document.querySelectorAll(".card-slot")[idx].classList.add("flipped");
-    flippedCards.push(idx);
-
-    if (flippedCards.length === 2) { moves++; document.getElementById("moveCount").textContent = moves; checkMatch(); }
-  }
-
-  function checkMatch() {
-    isLocked = true;
-    const [a,b] = flippedCards;
-    const ca = cards[a], cb = cards[b];
     const slots = document.querySelectorAll(".card-slot");
 
-    if (ca.id === cb.id) {
-      ca.isMatched = cb.isMatched = true;
-      matchedPairs++;
-      document.getElementById("pairCount").textContent = matchedPairs+" / "+totalPairs;
-      slots[a].classList.add("matched");
-      slots[b].classList.add("matched");
-      setTimeout(() => { flippedCards=[]; isLocked=false; if (matchedPairs===totalPairs) victory(); }, 400);
+    if (isRevealedMode) {
+      // ── MODE TERBUKA (REVEALED) ──
+      // Jika klik kartu yang sedang terpilih -> batalkan pilihan (toggle deselect)
+      if (selectedCards.includes(idx)) {
+        selectedCards = selectedCards.filter(i => i !== idx);
+        slots[idx].classList.remove("selected");
+        return;
+      }
+
+      // Pilih kartu
+      selectedCards.push(idx);
+      slots[idx].classList.add("selected");
+
+      if (selectedCards.length === 2) {
+        moves++;
+        document.getElementById("moveCount").textContent = moves;
+        checkMatch();
+      }
     } else {
-      slots[a].classList.add("wrong");
-      slots[b].classList.add("wrong");
-      setTimeout(() => {
-        ca.isFlipped = cb.isFlipped = false;
-        slots[a].classList.remove("flipped","wrong");
-        slots[b].classList.remove("flipped","wrong");
-        flippedCards=[]; isLocked=false;
-      }, 800);
+      // ── MODE TERTUTUP (MEMORY) ──
+      if (c.isFlipped) return;
+
+      c.isFlipped = true;
+      slots[idx].classList.add("flipped");
+      selectedCards.push(idx);
+
+      if (selectedCards.length === 2) {
+        moves++;
+        document.getElementById("moveCount").textContent = moves;
+        checkMatch();
+      }
     }
   }
 
-  // ── Victory ──
+  // ── Cek Kecocokan Pasangan ──
+  function checkMatch() {
+    isLocked = true;
+    const [a, b] = selectedCards;
+    const ca = cards[a], cb = cards[b];
+    const slots = document.querySelectorAll(".card-slot");
+
+    // Cocok jika matchId sama dan satu adalah GAMBAR serta satunya CIRI KHAS
+    if (ca.matchId === cb.matchId && ca.cardType !== cb.cardType) {
+      ca.isMatched = cb.isMatched = true;
+      matchedPairs++;
+      document.getElementById("pairCount").textContent = matchedPairs + " / " + totalPairs;
+
+      slots[a].classList.remove("selected");
+      slots[b].classList.remove("selected");
+      slots[a].classList.add("matched");
+      slots[b].classList.add("matched");
+
+      // Buka identitas di kartu ciri khas
+      const traitCard = ca.cardType === "trait" ? ca : cb;
+      const footEl = document.getElementById("trait-foot-" + traitCard.uid);
+      if (footEl) {
+        footEl.innerHTML = `✅ <b>${traitCard.name}</b> ${traitCard.emoji}`;
+      }
+
+      // Notifikasi toast
+      showToast(ca.emoji, `Tepat! ${ca.name} cocok dengan ciri khasnya! 🎉`);
+
+      setTimeout(() => {
+        selectedCards = [];
+        isLocked = false;
+        if (matchedPairs === totalPairs) victory();
+      }, 450);
+    } else {
+      // Salah / Tidak Cocok
+      slots[a].classList.add("wrong");
+      slots[b].classList.add("wrong");
+
+      setTimeout(() => {
+        slots[a].classList.remove("selected", "wrong");
+        slots[b].classList.remove("selected", "wrong");
+
+        if (!isRevealedMode) {
+          ca.isFlipped = cb.isFlipped = false;
+          slots[a].classList.remove("flipped");
+          slots[b].classList.remove("flipped");
+        }
+
+        selectedCards = [];
+        isLocked = false;
+      }, 850);
+    }
+  }
+
+  // ── Victory Celebration ──
   function victory() {
     stopTimer();
     const ratio = moves / totalPairs;
-    let stars = ratio>2.5 ? 1 : ratio>1.8 ? 2 : 3;
-    const score = Math.max(100, Math.round(10000/(moves+seconds/10)));
+    let stars = ratio > 2.6 ? 1 : ratio > 1.8 ? 2 : 3;
+    const score = Math.max(100, Math.round(10000 / (moves + seconds / 10)));
 
     document.getElementById("victoryMoves").textContent = moves;
-    const m=Math.floor(seconds/60), s=seconds%60;
-    document.getElementById("victoryTime").textContent  = m+":"+String(s).padStart(2,"0");
+    const m = Math.floor(seconds / 60), s = seconds % 60;
+    document.getElementById("victoryTime").textContent  = m + ":" + String(s).padStart(2, "0");
     document.getElementById("victoryScore").textContent = score;
-    document.getElementById("starRating").textContent   = "⭐".repeat(stars)+"☆".repeat(3-stars);
+    document.getElementById("starRating").textContent   = "⭐".repeat(stars) + "☆".repeat(3 - stars);
 
-    setTimeout(() => { document.getElementById("victoryOverlay").classList.add("show"); launchConfetti(); }, 500);
+    setTimeout(() => {
+      document.getElementById("victoryOverlay").classList.add("show");
+      launchConfetti();
+    }, 450);
   }
 
-  // ── Confetti ──
+  // ── Confetti Particle Effect ──
   function launchConfetti() {
     const cv = document.getElementById("confettiCanvas");
     const ctx = cv.getContext("2d");
     cv.width = innerWidth; cv.height = innerHeight;
 
-    const colors = ["#ff6b9d","#c44dff","#4dc9f6","#ffd93d","#90be6d","#f9c74f"];
-    const bits = Array.from({length:120}, () => ({
-      x: Math.random()*cv.width, y: Math.random()*-cv.height,
-      w: Math.random()*10+5, h: Math.random()*6+3,
-      color: colors[Math.floor(Math.random()*colors.length)],
-      vy: Math.random()*3+2, vx: Math.random()*2-1,
-      rot: Math.random()*360, rs: Math.random()*6-3, op: 1
+    const colors = ["#ff6b9d", "#c44dff", "#4dc9f6", "#ffd93d", "#90be6d", "#f9c74f", "#38ef7d"];
+    const bits = Array.from({ length: 120 }, () => ({
+      x: Math.random() * cv.width,
+      y: Math.random() * -cv.height,
+      w: Math.random() * 10 + 5,
+      h: Math.random() * 6 + 3,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      vy: Math.random() * 3 + 2,
+      vx: Math.random() * 2 - 1,
+      rot: Math.random() * 360,
+      rs: Math.random() * 6 - 3,
+      op: 1
     }));
 
     let frame = 0;
     (function draw() {
-      ctx.clearRect(0,0,cv.width,cv.height);
+      ctx.clearRect(0, 0, cv.width, cv.height);
       let live = false;
       bits.forEach(c => {
-        if (c.y < cv.height+20) live = true;
-        c.y += c.vy; c.x += c.vx; c.rot += c.rs; c.op = Math.max(0, c.op-0.003);
+        if (c.y < cv.height + 20) live = true;
+        c.y += c.vy; c.x += c.vx; c.rot += c.rs;
+        c.op = Math.max(0, c.op - 0.003);
         ctx.save();
-        ctx.translate(c.x,c.y); ctx.rotate(c.rot*Math.PI/180);
-        ctx.globalAlpha = c.op; ctx.fillStyle = c.color;
-        ctx.fillRect(-c.w/2,-c.h/2,c.w,c.h);
+        ctx.translate(c.x, c.y);
+        ctx.rotate(c.rot * Math.PI / 180);
+        ctx.globalAlpha = c.op;
+        ctx.fillStyle = c.color;
+        ctx.fillRect(-c.w / 2, -c.h / 2, c.w, c.h);
         ctx.restore();
       });
-      if (live && ++frame<300) requestAnimationFrame(draw);
-      else ctx.clearRect(0,0,cv.width,cv.height);
+      if (live && ++frame < 300) requestAnimationFrame(draw);
+      else ctx.clearRect(0, 0, cv.width, cv.height);
     })();
   }
 
   // ── Init ──
   createBubbles();
   startGame();
+
+  // ── PWA Service Worker & Install Logic ──
+  let deferredPrompt = null;
+  const installBtn = document.getElementById('installBtn');
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (installBtn) {
+      installBtn.style.display = 'inline-block';
+    }
+  });
+
+  async function installPWA() {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log('User install choice:', outcome);
+    deferredPrompt = null;
+    if (installBtn) installBtn.style.display = 'none';
+  }
+
+  window.addEventListener('appinstalled', () => {
+    console.log('PWA berhasil diinstal!');
+    if (installBtn) installBtn.style.display = 'none';
+  });
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then((reg) => console.log('SW Registered:', reg.scope))
+        .catch((err) => console.log('SW Registration failed:', err));
+    });
+  }
 </script>
 </body>
 </html>
